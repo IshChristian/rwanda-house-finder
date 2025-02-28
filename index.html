@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garazi - Car Rental</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="border-b bg-white">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="text-xl font-bold">garazi</div>
+            
+            <!-- Added Search Input -->
+            <div class="flex-1 max-w-xl mx-12">
+                <div class="relative">
+                    <input type="text" placeholder="Search for cars, hosts, or locations" 
+                           class="w-full px-4 py-2 border rounded-lg pr-10">
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <nav class="flex gap-6">
+                    <a href="#" class="text-gray-600">How it works</a>
+                    <a href="#" class="text-gray-600">Become a Partners</a>
+                </nav>
+                <button class="bg-violet-600 text-white px-4 py-2 rounded-lg">Book a Car</button>
+                <div class="flex items-center gap-4">
+                    <div class="w-6 h-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pot2-BCeefemFG7tW9c6OhDg3Lwdcw4rRbP.png" alt="Profile" class="w-8 h-8 rounded-full">
+                        <span class="text-gray-700">Suprapto Grey</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex gap-4 mb-4">
+            <div class="flex-1 flex items-center gap-2 border rounded-lg px-4 py-2">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <input type="text" value="Jl. Raya Ponorogo - Trenggalek, Bancangan" 
+                       class="flex-1 outline-none bg-transparent">
+            </div>
+            <div class="flex-1 flex items-center gap-2 border rounded-lg px-4 py-2">
+                <input type="text" value="Sat 4 Jan 2024, 21:00" 
+                       class="flex-1 outline-none bg-transparent">
+            </div>
+            <div class="flex-1 flex items-center gap-2 border rounded-lg px-4 py-2">
+                <input type="text" value="Sat 7 Jan 2024, 21:00" 
+                       class="flex-1 outline-none bg-transparent">
+            </div>
+            <button class="bg-gray-100 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-200">
+                Search a Car
+            </button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex gap-6">
+            <!-- Left Sidebar -->
+            <div class="w-1/4">
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold">Maps</h2>
+                        <button class="text-sm text-violet-600">Show Full Map</button>
+                    </div>
+                    <div class="h-64 bg-gray-200 rounded-lg"></div>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-white rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold">Filter</h2>
+                        <button class="text-sm text-violet-600">Clear All Filters</button>
+                    </div>
+                    
+                    <!-- Added Filter Tabs -->
+                    <div class="flex border-b mb-4">
+                        <button class="px-4 py-2 text-sm font-medium text-violet-600 border-b-2 border-violet-600">
+                            All Filters
+                        </button>
+                        <button class="px-4 py-2 text-sm font-medium text-gray-500">
+                            Popular
+                        </button>
+                        <button class="px-4 py-2 text-sm font-medium text-gray-500">
+                            Nearest
+                        </button>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-sm font-semibold mb-2">Preferences</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 bg-violet-100 text-violet-600 rounded-full text-sm">Instant Rent</span>
+                            <span class="px-3 py-1 bg-violet-100 text-violet-600 rounded-full text-sm">Delivery</span>
+                            <span class="px-3 py-1 bg-violet-100 text-violet-600 rounded-full text-sm">Pickup by Host</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-sm font-semibold mb-2">Category</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 border rounded-full text-sm">Sedan</span>
+                            <span class="px-3 py-1 border rounded-full text-sm">SUV</span>
+                            <span class="px-3 py-1 border rounded-full text-sm">Cabriolet</span>
+                            <span class="px-3 py-1 border rounded-full text-sm">Hatchback</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold mb-2">Fuel Type</h3>
+                        <div class="flex gap-2">
+                            <span class="px-3 py-1 border rounded-full text-sm">Gas</span>
+                            <span class="px-3 py-1 border rounded-full text-sm">Electric</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="flex-1">
+                <!-- Instant Rent Banner -->
+                <div class="bg-violet-50 rounded-lg p-4 mb-6 flex items-center gap-4">
+                    <div class="bg-violet-600 text-white p-2 rounded-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Instant Rent</h3>
+                        <p class="text-sm text-gray-600">With Instant Rent, you can book a vehicle immediately without having to wait for the owner's confirmation.</p>
+                    </div>
+                </div>
+
+                <!-- Popular Vehicles -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-semibold">Popular Vehicles</h2>
+                        <span class="text-sm text-gray-500">Showing 89 Vechicles available</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Vehicle Card -->
+                        <div class="bg-white rounded-lg overflow-hidden">
+                            <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pot2-BCeefemFG7tW9c6OhDg3Lwdcw4rRbP.png" alt="Hyundai Palisade" class="w-full h-48 object-cover">
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="text-sm bg-green-50 text-green-600 px-2 py-1 rounded">Free cancellation</span>
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                        <span class="text-sm">5.0</span>
+                                        <span class="text-xs text-gray-500">(180 trips)</span>
+                                    </div>
+                                </div>
+                                <h3 class="font-semibold mb-1">2022 - Hyundai Palisade Facelift</h3>
+                                <div class="flex justify-between items-center">
+                                    <div class="text-sm text-gray-500">1.6 km</div>
+                                    <div>
+                                        <span class="font-semibold">USD 300</span>
+                                        <span class="text-sm text-gray-500">/ day</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
