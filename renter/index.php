@@ -7,6 +7,7 @@ $address = isset($_GET['address']) ? $_GET['address'] : '';
 $sector = isset($_GET['sector']) ? $_GET['sector'] : '';
 $features = isset($_GET['features']) ? $_GET['features'] : [];
 $status = isset($_GET['status']) ? $_GET['status'] : '';
+$property_type = isset($_GET['property_type']) ? $_GET['property_type'] : '';
 
 // Create SQL query with filters
 $sql = "SELECT p.*, COUNT(v.property_id) as view_count 
@@ -20,13 +21,14 @@ if ($address) {
 if ($sector) {
     $sql .= " AND p.sector LIKE '%" . $conn->real_escape_string($sector) . "%'";
 }
-
+if ($property_type) {
+    $sql .= " AND p.property_type = '" . $conn->real_escape_string($property_type) . "'";
+}
 if (!empty($features)) {
     foreach ($features as $feature) {
         $sql .= " AND p.features LIKE '%" . $conn->real_escape_string($feature) . "%'";
     }
 }
-
 if ($status) {
     $sql .= " AND p.status = '" . $conn->real_escape_string($status) . "'";
 }
@@ -34,7 +36,7 @@ if ($status) {
 $sql .= " GROUP BY p.id";
 
 // If no filters, get popular properties first
-if (empty($address) && empty($sector) && empty($features) && empty($status)) {
+if (empty($address) && empty($sector) && empty($features) && empty($status) && empty($property_type)) {
     $popularSql = $sql . " ORDER BY id DESC LIMIT 5";
     $popularResult = $conn->query($popularSql);
     $popularProperties = [];
@@ -96,16 +98,20 @@ if ($result && $result->num_rows > 0) {
         <!-- Top Section -->
         <div class="flex items-center justify-between h-16">
           <div class="flex-1 flex items-center">
-            <a href="../" class="text-2xl font-medium text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+            <a href="./" class="text-2xl font-medium text-blue-800 hover:text-zinc-600 transition-colors duration-200">
               LiveAtRwanda
             </a>
           </div>
           <div class="flex items-center gap-6">
-            <!-- Language Selector -->
-            <div class="text-sm">Language</div>
-            <!-- Profile Dropdown -->
-            <div class="text-sm">Profile</div>
-          </div>
+          <!-- Booking Icon -->
+          <a href="booking.php" class="text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+            <i class="fas fa-calendar-alt"></i>
+          </a>
+          <!-- Logout Icon -->
+          <a href="../logout.php" class="text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
         </div>
 
         <!-- Bottom Section -->
@@ -125,29 +131,36 @@ if ($result && $result->num_rows > 0) {
                 <input type="text" name="sector" value="<?= htmlspecialchars($sector) ?>" placeholder="Sector"
                   class="border border-gray-300 rounded-md p-2" />
               </div>
-              <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Search</button>
-            </form>
+              <?php if ($property_type): ?>
+  <input type="hidden" name="property_type" value="<?= htmlspecialchars($property_type) ?>">
+  <?php endif; ?>
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Search</button>
+</form>
           </div>
 
           <!-- Right side - Accommodation Types -->
-          <div class="flex items-center gap-6">
-            <button class="flex flex-col items-center gap-1 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer">
-              <i class="fas fa-home"></i>
-              <span class="text-xs">House</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer">
-              <i class="fas fa-building"></i>
-              <span class="text-xs">Apartment</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer">
-              <i class="fas fa-hotel"></i>
-              <span class="text-xs">Guest House</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer">
-              <i class="fas fa-concierge-bell"></i>
-              <span class="text-xs">Hotel</span>
-            </button>
-          </div>
+<div class="flex items-center gap-6">
+  <a href="index.php?property_type=house<?= !empty($address) ? '&address='.urlencode($address) : '' ?><?= !empty($sector) ? '&sector='.urlencode($sector) : '' ?><?= !empty($status) ? '&status='.urlencode($status) : '' ?>" 
+     class="flex flex-col items-center gap-1 <?= $property_type == 'house' ? 'text-blue-600 font-semibold' : 'text-zinc-600' ?> hover:text-zinc-900 transition-colors">
+    <i class="fas fa-home"></i>
+    <span class="text-xs">House</span>
+  </a>
+  <a href="index.php?property_type=apartment<?= !empty($address) ? '&address='.urlencode($address) : '' ?><?= !empty($sector) ? '&sector='.urlencode($sector) : '' ?><?= !empty($status) ? '&status='.urlencode($status) : '' ?>" 
+     class="flex flex-col items-center gap-1 <?= $property_type == 'apartment' ? 'text-blue-600 font-semibold' : 'text-zinc-600' ?> hover:text-zinc-900 transition-colors">
+    <i class="fas fa-building"></i>
+    <span class="text-xs">Apartment</span>
+  </a>
+  <a href="index.php?property_type=guest_house<?= !empty($address) ? '&address='.urlencode($address) : '' ?><?= !empty($sector) ? '&sector='.urlencode($sector) : '' ?><?= !empty($status) ? '&status='.urlencode($status) : '' ?>" 
+     class="flex flex-col items-center gap-1 <?= $property_type == 'guest_house' ? 'text-blue-600 font-semibold' : 'text-zinc-600' ?> hover:text-zinc-900 transition-colors">
+    <i class="fas fa-hotel"></i>
+    <span class="text-xs">Guest House</span>
+  </a>
+  <a href="index.php?property_type=hotel<?= !empty($address) ? '&address='.urlencode($address) : '' ?><?= !empty($sector) ? '&sector='.urlencode($sector) : '' ?><?= !empty($status) ? '&status='.urlencode($status) : '' ?>" 
+     class="flex flex-col items-center gap-1 <?= $property_type == 'hotel' ? 'text-blue-600 font-semibold' : 'text-zinc-600' ?> hover:text-zinc-900 transition-colors">
+    <i class="fas fa-concierge-bell"></i>
+    <span class="text-xs">Hotel</span>
+  </a>
+</div>
         </div>
       </div>
     </div>
@@ -259,16 +272,16 @@ if ($result && $result->num_rows > 0) {
       <!-- Popular Properties Section -->
       <div class="bg-white shadow-md rounded-lg p-4">
         <h2 class="font-semibold text-lg mb-4">Most Popular Properties</h2>
-        <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <?php foreach ($popularProperties as $property): ?>
             <?php 
               // Parse images from JSON array
               $images = json_decode($property['images'], true) ?: [$property['images']]; 
             ?>
-            <div class="flex bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="rounded-lg overflow-hidden shadow-md bg-white">
               <!-- Property Image Slider -->
-              <div class="w-1/3 h-48 relative">
-                <div class="swiper mySwiper h-full">
+              <div class="h-56 relative">
+                <div class="swiper propertySwiper h-full">
                   <div class="swiper-wrapper">
                     <?php foreach ($images as $image): ?>
                       <div class="swiper-slide">
@@ -280,40 +293,35 @@ if ($result && $result->num_rows > 0) {
                 </div>
               </div>
               <!-- Property Details -->
-              <div class="w-2/3 p-4">
-                <h3 class="font-medium text-lg"><?= htmlspecialchars($property['title']) ?></h3>
-                <p class="text-gray-500"><?= htmlspecialchars($property['address']) ?>, <?= htmlspecialchars($property['sector']) ?></p>
-                <div class="flex mt-2 gap-4">
-                  <div class="flex items-center gap-1 text-sm text-indigo-700">
+              <div class="p-4">
+                <h3 class="font-medium"><?= htmlspecialchars($property['title']) ?></h3>
+                <p class="text-sm text-gray-500"><?= htmlspecialchars($property['address']) ?>, <?= htmlspecialchars($property['sector']) ?></p>
+                <div class="flex mt-4 gap-2 flex-wrap">
+                  <div class="flex items-center gap-1 text-xs text-indigo-700">
                     <i class="fas fa-ruler-combined"></i>
                     <span><?= htmlspecialchars($property['area']) ?> sqft</span>
                   </div>
-                  <div class="flex items-center gap-1 text-sm text-indigo-700">
+                  <div class="flex items-center gap-1 text-xs text-indigo-700">
                     <i class="fas fa-bath"></i>
                     <span><?= htmlspecialchars($property['bathrooms']) ?> baths</span>
                   </div>
-                  <div class="flex items-center gap-1 text-sm text-indigo-700">
+                  <div class="flex items-center gap-1 text-xs text-indigo-700">
                     <i class="fas fa-bed"></i>
                     <span><?= htmlspecialchars($property['bedrooms']) ?> beds</span>
                   </div>
-                  <div class="flex items-center gap-1 text-sm text-indigo-700">
-                    <i class="fas fa-eye"></i>
-                    <span><?= htmlspecialchars($property['view_count']) ?> views</span>
-                  </div>
                 </div>
-                <div class="flex justify-between items-center mt-4">
-                  <div>
-                    <p class="font-semibold text-xl text-indigo-700">$<?= htmlspecialchars($property['price']) ?></p>
-                    <p class="text-sm text-gray-500">
-                      <?= $property['status'] == 'available' ? 
-                          '<span class="text-green-600">Available</span>' : 
-                          '<span class="text-red-600">Booked</span>' ?>
-                    </p>
-                  </div>
-                  <a href="propertyDetails.php?id=<?= $property['id'] ?>" 
-                     class="<?= $property['status'] == 'available' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-500 cursor-not-allowed' ?> text-white px-4 py-2 rounded-md">
-                    <?= $property['status'] == 'available' ? 'Book Now' : 'Booked' ?>
-                  </a>
+                <div class="flex justify-between mt-4 items-center">
+                  <p class="font-semibold text-indigo-700">$<?= htmlspecialchars($property['price']) ?></p>
+                  <?php if ($property['status'] == 'available'): ?>
+                    <a href="propertyDetails.php?id=<?= $property['id'] ?>" 
+                       class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm">
+                      Book Now
+                    </a>
+                  <?php else: ?>
+                    <span class="bg-gray-500 text-white px-3 py-1 rounded-md text-sm">
+                      Booked
+                    </span>
+                  <?php endif; ?>
                 </div>
               </div>
             </div>
@@ -331,16 +339,16 @@ if ($result && $result->num_rows > 0) {
         <?php if (empty($properties)): ?>
           <p class="text-center py-8">No properties found based on your search.</p>
         <?php else: ?>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="space-y-4">
             <?php foreach ($properties as $property): ?>
               <?php 
                 // Parse images from JSON array
                 $images = json_decode($property['images'], true) ?: [$property['images']]; 
               ?>
-              <div class="rounded-lg overflow-hidden shadow-md bg-white">
+              <div class="flex bg-white rounded-lg shadow-md overflow-hidden">
                 <!-- Property Image Slider -->
-                <div class="h-56 relative">
-                  <div class="swiper propertySwiper h-full">
+                <div class="w-1/3 h-48 relative">
+                  <div class="swiper mySwiper h-full">
                     <div class="swiper-wrapper">
                       <?php foreach ($images as $image): ?>
                         <div class="swiper-slide">
@@ -352,29 +360,46 @@ if ($result && $result->num_rows > 0) {
                   </div>
                 </div>
                 <!-- Property Details -->
-                <div class="p-4">
-                  <h3 class="font-medium"><?= htmlspecialchars($property['title']) ?></h3>
-                  <p class="text-sm text-gray-500"><?= htmlspecialchars($property['address']) ?>, <?= htmlspecialchars($property['sector']) ?></p>
-                  <div class="flex mt-4 gap-2 flex-wrap">
-                    <div class="flex items-center gap-1 text-xs text-indigo-700">
+                <div class="w-2/3 p-4">
+                  <h3 class="font-medium text-lg"><?= htmlspecialchars($property['title']) ?></h3>
+                  <p class="text-gray-500"><?= htmlspecialchars($property['address']) ?>, <?= htmlspecialchars($property['sector']) ?></p>
+                  <div class="flex mt-2 gap-4">
+                    <div class="flex items-center gap-1 text-sm text-indigo-700">
                       <i class="fas fa-ruler-combined"></i>
                       <span><?= htmlspecialchars($property['area']) ?> sqft</span>
                     </div>
-                    <div class="flex items-center gap-1 text-xs text-indigo-700">
+                    <div class="flex items-center gap-1 text-sm text-indigo-700">
                       <i class="fas fa-bath"></i>
                       <span><?= htmlspecialchars($property['bathrooms']) ?> baths</span>
                     </div>
-                    <div class="flex items-center gap-1 text-xs text-indigo-700">
+                    <div class="flex items-center gap-1 text-sm text-indigo-700">
                       <i class="fas fa-bed"></i>
                       <span><?= htmlspecialchars($property['bedrooms']) ?> beds</span>
                     </div>
+                    <div class="flex items-center gap-1 text-sm text-indigo-700">
+                      <i class="fas fa-eye"></i>
+                      <span><?= htmlspecialchars($property['view_count']) ?> views</span>
+                    </div>
                   </div>
-                  <div class="flex justify-between mt-4 items-center">
-                    <p class="font-semibold text-indigo-700">$<?= htmlspecialchars($property['price']) ?></p>
-                    <a href="propertyDetails.php?id=<?= $property['id'] ?>" 
-                       class="<?= $property['status'] == 'available' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-500 cursor-not-allowed' ?> text-white px-3 py-1 rounded-md text-sm">
-                      <?= $property['status'] == 'available' ? 'Book Now' : 'Booked' ?>
-                    </a>
+                  <div class="flex justify-between items-center mt-4">
+                    <div>
+                      <p class="font-semibold text-xl text-indigo-700">$<?= htmlspecialchars($property['price']) ?></p>
+                      <p class="text-sm text-gray-500">
+                        <?= $property['status'] == 'available' ? 
+                            '<span class="text-green-600">Available</span>' : 
+                            '<span class="text-red-600">Booked</span>' ?>
+                      </p>
+                    </div>
+                    <?php if ($property['status'] == 'available'): ?>
+                      <a href="propertyDetails.php?id=<?= $property['id'] ?>" 
+                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                        Book Now
+                      </a>
+                    <?php else: ?>
+                      <span class="bg-gray-500 text-white px-4 py-2 rounded-md">
+                        Booked
+                      </span>
+                    <?php endif; ?>
                   </div>
                 </div>
               </div>

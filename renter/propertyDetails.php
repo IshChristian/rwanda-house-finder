@@ -15,8 +15,12 @@ if ($property_id <= 0) {
 // Check if user is logged in
 $user_logged_in = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 $user_id = $user_logged_in ? $_SESSION['user_id'] : 0;
+// Check if user is logged in
+// $user_logged_in = isset($_SESSION['user_id']);
+// $user_id = $user_logged_in ? $_SESSION['user_id'] : null;
+// $property_id = isset($_GET['id']) ? $_GET['id'] : null;
 
-// Fetch property details
+// Fetch property details - CORRECTED to fetch all data in one query
 $stmt = $conn->prepare("SELECT * FROM properties WHERE id = ?");
 $stmt->bind_param("i", $property_id);
 $stmt->execute();
@@ -30,30 +34,32 @@ if ($result->num_rows == 0) {
 $property = $result->fetch_assoc();
 $stmt->close();
 
-// Fetch property features
-$stmt = $conn->prepare("SELECT features FROM properties WHERE id = ?");
-$stmt->bind_param("i", $property_id);
+$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param("i", $property['user_id']);
 $stmt->execute();
-$features_result = $stmt->get_result();
-$features = [];
-while ($row = $features_result->fetch_assoc()) {
-    $features[] = $row['features'];
+$result = $stmt->get_result();
+
+if ($result->num_rows == 0) {
+    header("Location: properties.php");
+    exit();
 }
+
+$onwer = $result->fetch_assoc();
 $stmt->close();
 
-// Fetch property images
-$stmt = $conn->prepare("SELECT images FROM properties WHERE id = ?");
-$stmt->bind_param("i", $property_id);
-$stmt->execute();
-$images_result = $stmt->get_result();
-$images = [];
-while ($row = $images_result->fetch_assoc()) {
-    $images[] = $row['images'];
-}
-$stmt->close();
 
+// Parse JSON arrays for features and images - CORRECTED
+$features = json_decode($property['features'], true) ?? [];
+$images = json_decode($property['images'], true) ?? [];
+
+// Fallback if no images
 if (count($images) == 0) {
     $images[] = "https://via.placeholder.com/400x300?text=No+Image";
+}
+
+if(isset($_POST['messagebtn'])){
+    header("Location: message.php?receiver_id=".$property['user_id']);
+    exit();
 }
 
 // Fetch property reviews
@@ -72,47 +78,45 @@ while ($row = $reviews_result->fetch_assoc()) {
 $stmt->close();
 
 // Check if user has liked this property
-$is_liked = false;
-if ($user_logged_in) {
-    $stmt = $conn->prepare("SELECT favorite FROM reviews WHERE user_id = ? AND property_id = ?");
+
+
+// Initialize favorite status
+$is_favorite = false;
+
+if ($user_logged_in && $property_id) {
+    // Check if a review record exists for this user and property
+    $stmt = $conn->prepare("SELECT id, favorite FROM reviews WHERE user_id = ? AND property_id = ?");
     $stmt->bind_param("ii", $user_id, $property_id);
     $stmt->execute();
-    $like_result = $stmt->get_result();
-    $is_liked = ($like_result->num_rows > 0);
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        // Record exists, get current favorite status
+        $review = $result->fetch_assoc();
+        $review_id = $review['id'];
+        $is_favorite = (bool)$review['favorite'];
+    }
     $stmt->close();
 }
 
-// Fetch other properties (in the same city)
-// $stmt = $conn->prepare("SELECT *
-//                        FROM properties
-//                        WHERE sector = ?
-//                        LIMIT 3");
-// $stmt->bind_param("si", $property['sector']);
-// $stmt->execute();
-// $other_properties_result = $stmt->get_result();
-// $other_properties = [];
-// while ($row = $other_properties_result->fetch_assoc()) {
-//     $other_properties[] = $row;
-// }
-// $stmt->close();
-
-// Handle like/unlike action
-if (isset($_POST['toggle_like']) && $user_logged_in) {
-    if ($is_liked) {
-        // Remove like
-        $stmt = $conn->prepare("DELETE FROM reviews WHERE user_id = ? AND property_id = ?");
-        $stmt->bind_param("ii", $user_id, $property_id);
+// Handle favorite toggle action
+if (isset($_POST['toggle_favorite']) && $user_logged_in && $property_id) {
+    if ($result->num_rows > 0) {
+        // Record exists, update favorite status (toggle it)
+        $new_favorite_status = $is_favorite ? 0 : 1;
+        $stmt = $conn->prepare("UPDATE reviews SET favorite = ? WHERE id = ?");
+        $stmt->bind_param("ii", $new_favorite_status, $review_id);
         $stmt->execute();
         $stmt->close();
-        $is_liked = false;
     } else {
-        // Add like
-        $stmt = $conn->prepare("INSERT INTO reviews (user_id, property_id) VALUES (?, ?)");
-        $stmt->bind_param("ii", $user_id, $property_id);
+        // No record exists, insert a new one with favorite set to true
+        $favorite_status = 1;
+        $stmt = $conn->prepare("INSERT INTO reviews (user_id, property_id, favorite) VALUES (?, ?, ?)");
+        $stmt->bind_param("iii", $user_id, $property_id, $favorite_status);
         $stmt->execute();
         $stmt->close();
-        $is_liked = true;
     }
+    
     // Redirect to prevent form resubmission
     header("Location: propertyDetails.php?id=" . $property_id);
     exit();
@@ -165,9 +169,10 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
     
     $rent_amount = $property['price'];
     
+    // CORRECTED bind_param parameters to match query
     $stmt = $conn->prepare("INSERT INTO bookings (property_id, user_id, check_in_date, check_out_date, price, status, created_at) 
-                           VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())");
-    $stmt->bind_param("iissdi", $property_id, $user_id, $start_date, $is_monthly, $rent_amount);
+                           VALUES (?, ?, ?, ?, ?, 'pending', NOW())");
+    $stmt->bind_param("iissd", $property_id, $user_id, $start_date, $end_date, $rent_amount);
     $stmt->execute();
     $booking_id = $stmt->insert_id;
     $stmt->close();
@@ -213,7 +218,7 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
 </head>
 <body class="bg-gray-100 font-sans">
     <?php include './include/navbar.php' ?>
-    <div class="container  px-4 py-8">
+    <div class="container mx-auto px-4 py-8">
         <!-- Collage Image Header -->
         <div class="mb-8">
             <div class="flex flex-col md:flex-row gap-4">
@@ -255,6 +260,7 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
             </div>
         </div>
 
+        <!-- REVISED: Changed to two-column layout with property info left and booking right -->
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Left Side (Property Information) -->
             <div class="w-full lg:w-2/3 space-y-8">
@@ -266,7 +272,7 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                         <form method="post" class="inline">
                             <input type="hidden" name="toggle_like" value="1">
                             <button type="submit" class="text-3xl <?php echo $is_liked ? 'text-red-600' : 'text-gray-500'; ?>">
-                                <i class="fa<?php echo $is_liked ? 's' : 'r'; ?> fa-heart"></i>
+                                <i class="fas<?php echo $is_liked ? 's' : 'r'; ?> fa-heart"></i>
                             </button>
                         </form>
                     </h1>
@@ -277,9 +283,9 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                     
                     <p class="text-gray-600 mb-4">
                         <?php echo htmlspecialchars($property['address'] ?? 'Address not available'); ?>,
-                        <?php echo htmlspecialchars($property['city'] ?? 'City not available'); ?>,
-                        <?php echo htmlspecialchars($property['state'] ?? 'State not available'); ?>, 
-                        Zipcode: <?php echo htmlspecialchars($property['zip_code'] ?? 'N/A'); ?>
+                        <?php echo htmlspecialchars($property['sector'] ?? 'Sector not available'); ?>,
+                        <?php echo htmlspecialchars($property['village'] ?? 'Village not available'); ?>, 
+                        Zipcode: <?php echo htmlspecialchars($property['zipcode'] ?? 'N/A'); ?>
                     </p>
 
                     <!-- Property Features -->
@@ -290,11 +296,11 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                         </div>
                         <div class="flex items-center">
                             <i class="fas fa-bed mr-2 text-indigo-600"></i>
-                            <span><?php echo htmlspecialchars($property['bedroom'] ?? '0'); ?> Bedrooms</span>
+                            <span><?php echo htmlspecialchars($property['bedrooms'] ?? '0'); ?> Bedrooms</span>
                         </div>
                         <div class="flex items-center">
                             <i class="fas fa-bath mr-2 text-indigo-600"></i>
-                            <span><?php echo htmlspecialchars($property['bathroom'] ?? '0'); ?> Bathrooms</span>
+                            <span><?php echo htmlspecialchars($property['bathrooms'] ?? '0'); ?> Bathrooms</span>
                         </div>
                         <div class="flex items-center">
                             <i class="fas fa-car mr-2 text-indigo-600"></i>
@@ -342,9 +348,6 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                                     <div class="border-b pb-4 last:border-b-0">
                                         <div class="flex items-center justify-between mb-2">
                                             <div class="flex items-center">
-                                                <img src="<?php echo htmlspecialchars($review['profile_image'] ?? 'images/default-avatar.png'); ?>" 
-                                                     alt="<?php echo htmlspecialchars($review['name'] ?? 'Anonymous'); ?>"
-                                                     class="w-10 h-10 rounded-full object-cover mr-3">
                                                 <span class="font-medium mr-2">
                                                     <?php echo htmlspecialchars($review['name'] ?? 'Anonymous'); ?>
                                                 </span>
@@ -370,18 +373,43 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                         <?php endif; ?>
                     </div>
                 </div>
+            </div>
                 
-                <!-- Right Side (Booking Panel) -->
-                <div class="w-full lg:w-1/3 space-y-6">
-                    <div class="bg-white rounded-lg shadow-md p-6">
-                        <button class="w-full bg-indigo-600 text-white py-3 rounded-lg mb-4 hover:bg-indigo-700">
-                            <i class="far fa-calendar-alt mr-2"></i>
-                            Request a Tour
+            <!-- Right Side (Booking Panel) - MOVED OUTSIDE OF PROPERTY INFO -->
+            <div class="w-full lg:w-1/3 space-y-6">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <form action="propertyDetails.php?id=<?php echo $property_id ?>" method="post">
+                        <button onclick="openBookingModal()" class="w-full bg-indigo-600 text-white py-3 rounded-lg mb-4 hover:bg-indigo-700" name="messagebtn">
+                            <i class="far fa-envelope mr-2"></i>
+                            <a href="message.php?receiver_id=<?php echo $property['user_id'] ?>">Message Owner</a>
                         </button>
-                        <button class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600" 
+                    </form>
+                    <button class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600" 
                         id="bookNowBtn" onclick="openBookingModal()">
+                        <i class="fas fa-book mr-2"></i>
                         Book Now
                     </button>
+                </div>
+                
+                <!-- Property Agent Information -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">Property Owner</h3>
+                    <div class="flex items-center mb-4">
+                        <div>
+                            <p class="font-medium"> <?php echo htmlspecialchars($onwer['name']); ?></p>
+                            <p class="text-sm text-gray-600">Property Owner</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <p class="flex items-center text-gray-700">
+                            <i class="fas fa-phone mr-2 text-indigo-600"></i>
+                            <?php echo htmlspecialchars($onwer['phone']); ?>
+                        </p>
+                        <p class="flex items-center text-gray-700">
+                            <i class="fas fa-envelope mr-2 text-indigo-600"></i>
+                            <?php echo htmlspecialchars($onwer['email']); ?>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -518,7 +546,11 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
             </button>
         </div>
     </div>
-    <?php include './include/footer.php' ?>
+    
+    <!-- CORRECTED: Full width footer -->
+    <div class="w-full">
+        <?php include './include/footer.php' ?>
+    </div>
 
     <script>
         // Current rating for review

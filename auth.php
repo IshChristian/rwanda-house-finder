@@ -90,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($result) {
         if ($business_type === 'renter') {
-            header("Location: /renter/index.php?email=" . urlencode($email));
+            header("Location: ./renter/index.php?email=" . urlencode($email));
         } else {
-            header("Location: /owner/index.php?email=" . urlencode($email));
+            header("Location: ./owner/index.php?email=" . urlencode($email));
         }
         exit;
     } else {

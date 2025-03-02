@@ -31,40 +31,46 @@ $properties_query = "SELECT * FROM properties WHERE user_id = $user_id";
 $reviews_query = "SELECT * FROM reviews WHERE user_id = $user_id AND created_at BETWEEN '$start_date' AND '$end_date'";
 $payments_query = "SELECT * FROM payments WHERE user_id = $user_id AND createAt BETWEEN '$start_date' AND '$end_date'";
 
-// Execute queries
-$bookings_result = $conn->query($bookings_query);
-$properties_result = $conn->query($properties_query);
-$reviews_result = $conn->query($reviews_query);
-$payments_result = $conn->query($payments_query);
-
-// Fetch data into arrays
+// Execute queries and fetch data into arrays
 $bookings = [];
 $properties = [];
 $reviews = [];
 $payments = [];
 
-if ($bookings_result->num_rows > 0) {
+// Fetch bookings
+$bookings_result = $conn->query($bookings_query);
+if ($bookings_result && $bookings_result->num_rows > 0) {
     while ($row = $bookings_result->fetch_assoc()) {
         $bookings[] = $row;
     }
+    $bookings_result->free(); // Free the result set
 }
 
-if ($properties_result->num_rows > 0) {
+// Fetch properties
+$properties_result = $conn->query($properties_query);
+if ($properties_result && $properties_result->num_rows > 0) {
     while ($row = $properties_result->fetch_assoc()) {
         $properties[] = $row;
     }
+    $properties_result->free(); // Free the result set
 }
 
-if ($reviews_result->num_rows > 0) {
+// Fetch reviews
+$reviews_result = $conn->query($reviews_query);
+if ($reviews_result && $reviews_result->num_rows > 0) {
     while ($row = $reviews_result->fetch_assoc()) {
         $reviews[] = $row;
     }
+    $reviews_result->free(); // Free the result set
 }
 
-if ($payments_result->num_rows > 0) {
+// Fetch payments
+$payments_result = $conn->query($payments_query);
+if ($payments_result && $payments_result->num_rows > 0) {
     while ($row = $payments_result->fetch_assoc()) {
         $payments[] = $row;
     }
+    $payments_result->free(); // Free the result set
 }
 
 // Close the connection
@@ -90,102 +96,102 @@ $conn->close();
         <aside class="w-1/4 p-6">
             <?php include './include/sidebar.php'; ?>
         </aside>
-    <div class="container mx-auto p-5">
-        <h1 class="text-3xl font-semibold text-center">Data Analysis</h1>
+        <div class="container mx-auto p-5">
+            <h1 class="text-3xl font-semibold text-center">Data Analysis</h1>
 
-        <!-- Date Filter Form -->
-        <form method="POST" action='analyse.php' class="my-5">
-            <div class="flex justify-center space-x-4">
-                <div class="flex space-x-2">
-                    <input type="date" name="start_date" class="px-4 py-2 border border-gray-300 rounded-md" value="<?php echo isset($start_date) ? $start_date : ''; ?>" required>
-                    <input type="date" name="end_date" class="px-4 py-2 border border-gray-300 rounded-md" value="<?php echo isset($end_date) ? $end_date : ''; ?>" required>
+            <!-- Date Filter Form -->
+            <form method="POST" action='analyse.php' class="my-5">
+                <div class="flex justify-center space-x-4">
+                    <div class="flex space-x-2">
+                        <input type="date" name="start_date" class="px-4 py-2 border border-gray-300 rounded-md" value="<?php echo isset($start_date) ? $start_date : ''; ?>" required>
+                        <input type="date" name="end_date" class="px-4 py-2 border border-gray-300 rounded-md" value="<?php echo isset($end_date) ? $end_date : ''; ?>" required>
+                    </div>
+                    <button type="submit" name="filter" class="px-4 py-2 bg-blue-500 text-white rounded-md">Filter</button>
                 </div>
-                
-                <button type="submit" name="filter" class="px-4 py-2 bg-blue-500 text-white rounded-md">Filter</button>
-            </div>
-        </form>
+            </form>
 
-        <!-- Bookings Table -->
-        <h2 class="text-2xl font-semibold">Bookings</h2>
-        <table class="min-w-full bg-white border border-gray-300 mt-4">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2 border">Booking ID</th>
-                    <th class="px-4 py-2 border">Property</th>
-                    <th class="px-4 py-2 border">Booking Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($bookings as $booking): ?>
+            <!-- Bookings Table -->
+            <h2 class="text-2xl font-semibold">Bookings</h2>
+            <table class="min-w-full bg-white border border-gray-300 mt-4">
+                <thead>
                     <tr>
-                        <td class="px-4 py-2 border"><?php echo $booking['id']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $booking['property_id']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $booking['booking_date']; ?></td>
+                        <th class="px-4 py-2 border">Booking ID</th>
+                        <th class="px-4 py-2 border">Property</th>
+                        <th class="px-4 py-2 border">Booking Date</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($bookings as $booking): ?>
+                        <tr>
+                            <td class="px-4 py-2 border"><?php echo $booking['id']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $booking['property_id']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $booking['booking_date']; ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
 
-        <!-- Properties Table -->
-        <h2 class="text-2xl font-semibold mt-8">Properties</h2>
-        <table class="min-w-full bg-white border border-gray-300 mt-4">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2 border">Property ID</th>
-                    <th class="px-4 py-2 border">Property Name</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($properties as $property): ?>
+            <!-- Properties Table -->
+            <h2 class="text-2xl font-semibold mt-8">Properties</h2>
+            <table class="min-w-full bg-white border border-gray-300 mt-4">
+                <thead>
                     <tr>
-                        <td class="px-4 py-2 border"><?php echo $property['id']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $property['title']; ?></td>
+                        <th class="px-4 py-2 border">Property ID</th>
+                        <th class="px-4 py-2 border">Property Name</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($properties as $property): ?>
+                        <tr>
+                            <td class="px-4 py-2 border"><?php echo $property['id']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $property['title']; ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
 
-        <!-- Reviews Table -->
-        <h2 class="text-2xl font-semibold mt-8">Reviews</h2>
-        <table class="min-w-full bg-white border border-gray-300 mt-4">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2 border">Review ID</th>
-                    <th class="px-4 py-2 border">Review Date</th>
-                    <th class="px-4 py-2 border">Rating</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($reviews as $review): ?>
+            <!-- Reviews Table -->
+            <h2 class="text-2xl font-semibold mt-8">Reviews</h2>
+            <table class="min-w-full bg-white border border-gray-300 mt-4">
+                <thead>
                     <tr>
-                        <td class="px-4 py-2 border"><?php echo $review['id']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $review['review_date']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $review['rating']; ?></td>
+                        <th class="px-4 py-2 border">Review ID</th>
+                        <th class="px-4 py-2 border">Review Date</th>
+                        <th class="px-4 py-2 border">Rating</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($reviews as $review): ?>
+                        <tr>
+                            <td class="px-4 py-2 border"><?php echo $review['id']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $review['review_date']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $review['rating']; ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
 
-        <!-- Payments Table -->
-        <h2 class="text-2xl font-semibold mt-8">Payments</h2>
-        <table class="min-w-full bg-white border border-gray-300 mt-4">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2 border">Payment ID</th>
-                    <th class="px-4 py-2 border">Amount</th>
-                    <th class="px-4 py-2 border">Payment Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($payments as $payment): ?>
+            <!-- Payments Table -->
+            <h2 class="text-2xl font-semibold mt-8">Payments</h2>
+            <table class="min-w-full bg-white border border-gray-300 mt-4">
+                <thead>
                     <tr>
-                        <td class="px-4 py-2 border"><?php echo $payment['id']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $payment['amount']; ?></td>
-                        <td class="px-4 py-2 border"><?php echo $payment['payment_date']; ?></td>
+                        <th class="px-4 py-2 border">Payment ID</th>
+                        <th class="px-4 py-2 border">Amount</th>
+                        <th class="px-4 py-2 border">Payment Date</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($payments as $payment): ?>
+                        <tr>
+                            <td class="px-4 py-2 border"><?php echo $payment['id']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $payment['amount']; ?></td>
+                            <td class="px-4 py-2 border"><?php echo $payment['payment_date']; ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>

@@ -28,7 +28,10 @@ function getStats($conn, $user_id) {
     ];
     
     // Get total likes
-    $sql = "SELECT COUNT(*) as total FROM reviews WHERE user_id = ?";
+    $sql = "SELECT COUNT(reviews.favorite) as total 
+    FROM reviews
+    JOIN properties ON reviews.property_id = properties.id
+    WHERE properties.user_id = ? and reviews.favorite='true'";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -39,7 +42,9 @@ function getStats($conn, $user_id) {
     }
     
     // Get user requests
-    $sql = "SELECT COUNT(*) as total FROM bookings WHERE user_id = ?";
+    $sql = "SELECT COUNT(bookings.id) as total 
+    FROM bookings INNER JOIN properties ON bookings.property_id = properties.id
+    WHERE properties.user_id = ? and bookings.status='accepted'";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -50,7 +55,7 @@ function getStats($conn, $user_id) {
     }
     
     // Get booked requests
-    $sql = "SELECT COUNT(*) as total FROM bookings WHERE user_id = ? AND status = 'Confirmed'";
+    $sql = "SELECT COUNT(*) as total FROM properties WHERE user_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -61,7 +66,10 @@ function getStats($conn, $user_id) {
     }
     
     // Get team members
-    $sql = "SELECT COUNT(*) as total FROM users WHERE id = ?";
+    $sql = "SELECT SUM(reviews.id) as total 
+    FROM reviews
+    JOIN properties ON reviews.property_id = properties.id
+    WHERE properties.user_id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
@@ -72,16 +80,21 @@ function getStats($conn, $user_id) {
     }
     
     // Get total income
-    $sql = "SELECT SUM(amount) as total FROM payments WHERE user_id = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($row = $result->fetch_assoc()) {
-        $stats['total_income'] = $row['total'] ? $row['total'] : 0;
-    }
-    
+    $sql = "SELECT SUM(payments.amount) as total 
+    FROM payments 
+    JOIN bookings ON payments.booking_id = bookings.id
+    JOIN properties ON bookings.property_id = properties.id
+    WHERE properties.user_id = ?";
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($row = $result->fetch_assoc()) {
+$stats['total_income'] = $row['total'] ? $row['total'] : 0;
+}
+
     return $stats;
 }
 
@@ -106,12 +119,12 @@ function getProperties($conn, $user_id) {
 function getBookings($conn, $user_id) {
     $bookings = [];
     
-    $sql = "SELECT b.id, c.name as customerName, p.title as propertyName, b.booking_date as bookingDate, b.status 
+    $sql = "SELECT b.id, c.name as customerName, p.title as propertyName, b.created_at as bookingDate, b.status 
            FROM bookings b 
            JOIN users c ON b.user_id = c.id 
            JOIN properties p ON b.property_id = p.id 
            WHERE p.user_id = ? 
-           ORDER BY b.booking_date DESC 
+           ORDER BY b.created_at DESC 
            LIMIT 10";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $user_id);
@@ -249,12 +262,30 @@ $conn->close();
                             <div class="stat-desc">↗︎ <?php echo number_format($stats['likes_growth']); ?> this month</div>
                         </div>
 
+                        <!-- Total Team -->
+                        <div class="stat place-items-center">
+                            <div class="stat-figure text-info">
+                                <i data-lucide="user-plus" class="h-8 w-8 text-purple-500"></i>
+                            </div>
+                            <div class="stat-title">Total Views</div>
+                            <div class="stat-value"><?php echo number_format($stats['team_members']); ?></div>
+                            <div class="stat-desc">
+                                <?php
+                                if ($stats['team_members'] > 0) {
+                                    echo "All active";
+                                } else {
+                                    echo "No team members yet";
+                                }
+                                ?>
+                            </div>
+                        </div>
+
                         <!-- Total User Requests -->
                         <div class="stat place-items-center">
                             <div class="stat-figure text-secondary">
                                 <i data-lucide="users" class="h-8 w-8 text-blue-500"></i>
                             </div>
-                            <div class="stat-title">User Requests</div>
+                            <div class="stat-title">Accepted Booking</div>
                             <div class="stat-value text-secondary"><?php echo number_format($stats['user_requests']); ?></div>
                             <div class="stat-desc text-secondary">
                                 <?php
@@ -272,7 +303,7 @@ $conn->close();
                             <div class="stat-figure text-accent">
                                 <i data-lucide="check-circle" class="h-8 w-8 text-green-500"></i>
                             </div>
-                            <div class="stat-title">Booked Requests</div>
+                            <div class="stat-title">Total Properties</div>
                             <div class="stat-value"><?php echo number_format($stats['booked_requests']); ?></div>
                             <div class="stat-desc">
                                 <?php
@@ -285,23 +316,7 @@ $conn->close();
                             </div>
                         </div>
 
-                        <!-- Total Team -->
-                        <div class="stat place-items-center">
-                            <div class="stat-figure text-info">
-                                <i data-lucide="user-plus" class="h-8 w-8 text-purple-500"></i>
-                            </div>
-                            <div class="stat-title">Team Members</div>
-                            <div class="stat-value"><?php echo number_format($stats['team_members']); ?></div>
-                            <div class="stat-desc">
-                                <?php
-                                if ($stats['team_members'] > 0) {
-                                    echo "All active";
-                                } else {
-                                    echo "No team members yet";
-                                }
-                                ?>
-                            </div>
-                        </div>
+                        
 
                         <!-- Total Income Balance -->
                         <div class="stat place-items-center">
@@ -313,48 +328,6 @@ $conn->close();
                             <div class="stat-desc">↗︎ $<?php echo number_format($stats['income_growth']); ?> last month</div>
                         </div>
                     </div>
-
-                    <!-- Properties Section -->
-                    <section class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Your Properties</h2>
-                        
-                        <?php if (empty($properties)): ?>
-                        <div class="bg-white rounded-lg shadow-md p-6 text-center">
-                            <p class="text-gray-500">You haven't added any properties yet.</p>
-                            <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                                Add Your First Property
-                            </button>
-                        </div>
-                        <?php else: ?>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                            <?php foreach ($properties as $property): ?>
-                            <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
-                                <img src="<?php echo !empty($property['image']) ? $property['image'] : 'images/placeholder.jpg'; ?>" 
-                                     alt="<?php echo htmlspecialchars($property['title']); ?>" 
-                                     class="w-full h-40 object-cover">
-                                <div class="p-4">
-                                    <h3 class="font-semibold text-lg mb-2">
-                                        <?php echo htmlspecialchars($property['title']); ?>
-                                    </h3>
-                                    <div class="flex justify-between items-center">
-                                        <span class="px-2 py-1 rounded-full text-xs font-medium 
-                                            <?php echo $property['status'] === 'Available' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'; ?>">
-                                            <?php echo htmlspecialchars($property['status']); ?>
-                                        </span>
-                                        <button class="text-blue-600 hover:text-blue-800 transition-colors duration-300">
-                                            <?php if ($property['status'] === 'Available'): ?>
-                                                <i data-lucide="edit" class="h-5 w-5"></i>
-                                            <?php else: ?>
-                                                <i data-lucide="eye" class="h-5 w-5"></i>
-                                            <?php endif; ?>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                    </section>
 
                     <!-- Bookings Section -->
                     <section>

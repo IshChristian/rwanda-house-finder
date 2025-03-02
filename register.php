@@ -82,6 +82,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>Sign Up - LiveAt Rwanda</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.1.0/dist/full.css" rel="stylesheet" type="text/css" />
+
 </head>
 <body>
     <div class="hero min-h-screen bg-gradient-to-r from-blue-50 via-white to-blue-50">
@@ -171,6 +173,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <span class="label-text font-medium ml-2">Remember Me</span>
                         </label>
                     </div>
+
+                    <label class="label">
+                            <a href="login.php" class="label-text-alt link link-hover text-sm">
+                                I already create account? login
+                            </a>
+                        </label>
 
                     <?php if ($error): ?>
                         <p class="text-sm text-red-500 mt-2">

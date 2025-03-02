@@ -13,20 +13,20 @@ include '../config/connection.php';
 // Check if form is submitted
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Form fields
-    $title = $_POST['title'];
-    $type = $_POST['type'];
-    $purpose = $_POST['purpose'];
-    $status = $_POST['status'];
-    $price = $_POST['price'];
-    $period = $_POST['period'];
-    $address = $_POST['address'];
-    $city = $_POST['city'];
-    $state = $_POST['state'];
-    $zipCode = $_POST['zipCode'];
-    $area = $_POST['area'];
-    $bedroom = $_POST['bedroom'];
-    $bathroom = $_POST['bathroom'];
-    $description = $_POST['description'];
+    $title = mysqli_real_escape_string($conn, $_POST['title']);
+    $type = mysqli_real_escape_string($conn, $_POST['type']);
+    $purpose = mysqli_real_escape_string($conn, $_POST['purpose']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $price = mysqli_real_escape_string($conn, $_POST['price']);
+    $period = mysqli_real_escape_string($conn, $_POST['period']);
+    $address = mysqli_real_escape_string($conn, $_POST['address']);
+    $city = mysqli_real_escape_string($conn, $_POST['city']);
+    $state = mysqli_real_escape_string($conn, $_POST['state']);
+    $zipCode = mysqli_real_escape_string($conn, $_POST['zipCode']);
+    $area = (int)$_POST['area'];
+    $bedroom = (int)$_POST['bedroom'];
+    $bathroom = (int)$_POST['bathroom'];
+    $description = mysqli_real_escape_string($conn, $_POST['description']);
 
     // Features (store as an array)
     $features = isset($_POST['features']) ? json_encode($_POST['features']) : json_encode([]);
@@ -55,13 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Store image URLs as a JSON array
     $images = json_encode($image_urls);
 
-    // Insert data into properties table
-    $stmt = $conn->prepare("INSERT INTO properties (user_id, title, property_type, purpose, status, price, period, address, sector, village, zipcode, area, bedrooms, bathrooms, description, features, images) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("issssssssssiiisss", $user_id, $title, $type, $purpose, $status, $price, $period, $address, $city, $state, $zipCode, $area, $bedroom, $bathroom, $description, $features, $images);
-    $stmt->execute();
-    $stmt->close();
-
-    echo "Property added successfully!";
+    // Insert data into properties table using regular mysqli
+    $query = "INSERT INTO properties (user_id, title, property_type, purpose, status, price, period, address, sector, village, zipcode, area, bedrooms, bathrooms, description, features, images) 
+              VALUES ('$user_id', '$title', '$type', '$purpose', '$status', '$price', '$period', '$address', '$city', '$state', '$zipCode', $area, $bedroom, $bathroom, '$description', '$features', '$images')";
+    
+    if(mysqli_query($conn, $query)) {
+        echo "Property added successfully!";
+    } else {
+        echo "Error: " . mysqli_error($conn);
+    }
 }
 ?>
 
@@ -114,9 +116,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         /* Modal styles */
         .modal {
             display: none;
-        }
-        .modal.active {
-            display: flex;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
         }
         
         /* Feature checkbox styling */
@@ -201,15 +207,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <!-- Property Listings -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php
-                // Fetch properties from database
-                $sql = "SELECT * FROM properties WHERE user_id = ?";
-                $stmt = $conn->prepare($sql);
-                $stmt->bind_param("i", $_SESSION['user_id']);
-                $stmt->execute();
-                $result = $stmt->get_result();
+                // Fetch properties from database using mysqli_query instead of prepared statements
+                $user_id = $_SESSION['user_id'];
+                $sql = "SELECT * FROM properties WHERE user_id = '$user_id'";
+                $result = mysqli_query($conn, $sql);
 
-                if ($result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
+                if (mysqli_num_rows($result) > 0) {
+                    while ($row = mysqli_fetch_assoc($result)) {
                         $property_id = $row['id'];
                         $title = $row['title'];
                         $location = $row['address'] . ", " . $row['sector'] . ", " . $row['village'] . ", " . $row['zipcode'];
@@ -297,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <i class="fas fa-home text-gray-300 text-6xl mb-4"></i>
                         <h3 class="text-xl font-semibold text-gray-800 mb-2">No Properties Found</h3>
                         <p class="text-gray-500 text-center mb-4">You haven't added any properties yet.</p>
-                        <button onclick="document.getElementById('openModalBtn').click()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 ease-in-out">
+                        <button id="emptyStateAddBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 ease-in-out">
                             <i class="fas fa-plus mr-2"></i> Add Your First Property
                         </button>
                     </div>
@@ -309,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <!-- Add Property Modal -->
-    <div id="newPropertyModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div id="newPropertyModal" class="modal">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-start mb-4">
                 <h2 class="text-2xl font-bold text-gray-800">Add New Property</h2>
@@ -586,12 +590,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const closeModalBtn = document.getElementById('closeModalBtn');
         const newPropertyModal = document.getElementById('newPropertyModal');
         
-        openModalBtn.addEventListener('click', () => {
-            newPropertyModal.classList.add('active');
+        // Open modal only when button is clicked
+        openModalBtn.addEventListener('click', function() {
+            newPropertyModal.style.display = 'flex';
         });
         
-        closeModalBtn.addEventListener('click', () => {
-            newPropertyModal.classList.remove('active');
+        // Add event listener for the empty state button if it exists
+        const emptyStateAddBtn = document.getElementById('emptyStateAddBtn');
+        if (emptyStateAddBtn) {
+            emptyStateAddBtn.addEventListener('click', function() {
+                newPropertyModal.style.display = 'flex';
+            });
+        }
+        
+        // Close modal when close button is clicked
+        closeModalBtn.addEventListener('click', function() {
+            newPropertyModal.style.display = 'none';
+        });
+        
+        // Close modal when clicking outside of the modal content
+        newPropertyModal.addEventListener('click', function(event) {
+            if (event.target === newPropertyModal) {
+                newPropertyModal.style.display = 'none';
+            }
         });
         
         // Feature checkbox styling
@@ -661,4 +682,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </script>
 </body>
 </html>
-
