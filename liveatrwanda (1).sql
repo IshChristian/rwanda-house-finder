@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 28, 2025 at 01:39 AM
+-- Generation Time: Mar 02, 2025 at 11:37 PM
 -- Server version: 10.4.27-MariaDB
 -- PHP Version: 8.2.0
 
@@ -31,13 +31,20 @@ CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
   `property_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `booking_date` datetime NOT NULL,
+  `price` varchar(6) NOT NULL,
   `check_in_date` date NOT NULL,
   `check_out_date` date NOT NULL,
   `status` varchar(50) NOT NULL DEFAULT 'pending',
-  `created_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bookings`
+--
+
+INSERT INTO `bookings` (`id`, `property_id`, `user_id`, `price`, `check_in_date`, `check_out_date`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 2, '316', '2025-03-01', '2025-03-31', 'accepted', '2025-03-01 21:48:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -55,6 +62,13 @@ CREATE TABLE `messages` (
   `created_at` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `messages`
+--
+
+INSERT INTO `messages` (`id`, `sender_id`, `receiver_id`, `property_id`, `message`, `is_read`, `created_at`) VALUES
+(1, 2, 1, NULL, 'hi', 0, '0000-00-00 00:00:00');
+
 -- --------------------------------------------------------
 
 --
@@ -64,12 +78,19 @@ CREATE TABLE `messages` (
 CREATE TABLE `payments` (
   `payment_id` int(11) NOT NULL,
   `user_id` int(11) DEFAULT NULL,
-  `sender_id` int(11) DEFAULT NULL,
+  `booking_id` int(11) DEFAULT NULL,
   `amount` int(6) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `status` varchar(10) DEFAULT NULL,
-  `createAt` timestamp NULL DEFAULT NULL
+  `createAt` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payments`
+--
+
+INSERT INTO `payments` (`payment_id`, `user_id`, `booking_id`, `amount`, `phone`, `status`, `createAt`) VALUES
+(2, 2, 1, -10378, '0791364641', 'completed', '2025-03-01 12:17:22');
 
 -- --------------------------------------------------------
 
@@ -133,10 +154,18 @@ CREATE TABLE `reviews` (
   `property_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `rating` int(11) NOT NULL,
+  `favorite` tinyint(1) DEFAULT NULL,
   `comment` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `reviews`
+--
+
+INSERT INTO `reviews` (`id`, `property_id`, `user_id`, `rating`, `favorite`, `comment`, `created_at`, `updated_at`) VALUES
+(1, 1, 2, 4, NULL, 'hhh', '2025-03-02 03:30:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -161,7 +190,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `business_type`, `image`, `created_at`, `updated_at`) VALUES
-(1, 'Ishimwe Christian', 'ishimwechristia94@gmail.com', '0791364641', '$2y$10$3SyXddsqR2jAUy3L8ick.uXNlrUhGnR/HQAqMZAUL4hnS2umfdTKu', 'owner', 'profile_67c09a129f0ff.png', '2025-02-27 17:38:11', NULL);
+(1, 'Ishimwe Christian', 'ishimwechristia94@gmail.com', '0791364641', '$2y$10$3SyXddsqR2jAUy3L8ick.uXNlrUhGnR/HQAqMZAUL4hnS2umfdTKu', 'owner', 'profile_67c09a129f0ff.png', '2025-02-27 17:38:11', NULL),
+(2, 'Ishimwe Christian', 'ishimwechris94@gmail.com', '0791364641', '$2y$10$h2A0He9.BaeTifi1evqaTuboD48ElpA.VtcmSZbv/0Kt/fSl13Nla', 'renter', 'profile_67c33e03601ab.jpg', '2025-03-01 18:03:38', NULL),
+(3, 'JohnDoe', 'tiangroupinnovation@gmail.com', '0791364642', '$2y$10$tCXEKuYJHngMTB/w7zQ4b.pwnIRJPrcPBiTtmYVHshmLJ9Y/k.jnq', 'renter', '', '2025-03-02 13:01:29', NULL);
 
 --
 -- Indexes for dumped tables
@@ -189,7 +220,7 @@ ALTER TABLE `messages`
 --
 ALTER TABLE `payments`
   ADD PRIMARY KEY (`payment_id`),
-  ADD KEY `sender_id` (`sender_id`);
+  ADD KEY `sender_id` (`booking_id`);
 
 --
 -- Indexes for table `properties`
@@ -228,19 +259,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `payment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `properties`
@@ -258,13 +289,13 @@ ALTER TABLE `property_images`
 -- AUTO_INCREMENT for table `reviews`
 --
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables
