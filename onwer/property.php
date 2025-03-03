@@ -345,8 +345,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         name="type"
                         class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                        <option value="residential">Residential</option>
-                        <option value="commercial">Commercial</option>
+                        <option value="house">House</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="guest house">Guest House</option>
+                        <option value="hotel">Hotel</option>
                     </select>
                 </div>
                 
@@ -374,7 +376,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                         <option value="available">Available</option>
-                        <option value="sold">Sold</option>
+                        <option value="booked">Booked</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="period" class="block text-sm font-medium text-gray-700 mb-1">
+                        Period
+                    </label>
+                    <select
+                        id="period"
+                        name="period"
+                        class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Daily</option>
                     </select>
                 </div>
                 
@@ -391,23 +407,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     />
                 </div>
                 
-                <div>
-                    <label for="period" class="block text-sm font-medium text-gray-700 mb-1">
-                        Period
-                    </label>
-                    <select
-                        id="period"
-                        name="period"
-                        class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                    </select>
-                </div>
+                
                 
                 <div>
                     <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
-                        Address
+                        District
                     </label>
                     <input
                         type="text"

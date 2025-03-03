@@ -103,13 +103,20 @@ if ($result && $result->num_rows > 0) {
             </a>
           </div>
           <div class="flex items-center gap-6">
+          <!-- Account Icon -->
+          <a href="account.php" class="flex flex-col items-center text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+            <i class="fas fa-user"></i>
+            <span class="text-xs mt-1">Profile</span>
+          </a>
           <!-- Booking Icon -->
-          <a href="booking.php" class="text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+          <a href="booking.php" class="flex flex-col items-center text-blue-800 hover:text-zinc-600 transition-colors duration-200">
             <i class="fas fa-calendar-alt"></i>
+            <span class="text-xs mt-1">Booking</span>
           </a>
           <!-- Logout Icon -->
-          <a href="../logout.php" class="text-blue-800 hover:text-zinc-600 transition-colors duration-200">
+          <a href="../logout.php" class="flex flex-col items-center text-blue-800 hover:text-zinc-600 transition-colors duration-200">
             <i class="fas fa-sign-out-alt"></i>
+            <span class="text-xs mt-1">Logout</span>
           </a>
         </div>
         </div>

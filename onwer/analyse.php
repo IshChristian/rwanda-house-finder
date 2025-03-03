@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+
 $user_id = $_SESSION['user_id']; // Get user ID from session
 
 // Set default date range to the current month

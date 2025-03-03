@@ -15,10 +15,6 @@ if ($property_id <= 0) {
 // Check if user is logged in
 $user_logged_in = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 $user_id = $user_logged_in ? $_SESSION['user_id'] : 0;
-// Check if user is logged in
-// $user_logged_in = isset($_SESSION['user_id']);
-// $user_id = $user_logged_in ? $_SESSION['user_id'] : null;
-// $property_id = isset($_GET['id']) ? $_GET['id'] : null;
 
 // Fetch property details - CORRECTED to fetch all data in one query
 $stmt = $conn->prepare("SELECT * FROM properties WHERE id = ?");
@@ -47,8 +43,7 @@ if ($result->num_rows == 0) {
 $onwer = $result->fetch_assoc();
 $stmt->close();
 
-
-// Parse JSON arrays for features and images - CORRECTED
+// Parse JSON arrays for features and images
 $features = json_decode($property['features'], true) ?? [];
 $images = json_decode($property['images'], true) ?? [];
 
@@ -76,9 +71,6 @@ while ($row = $reviews_result->fetch_assoc()) {
     $reviews[] = $row;
 }
 $stmt->close();
-
-// Check if user has liked this property
-
 
 // Initialize favorite status
 $is_favorite = false;
@@ -155,21 +147,27 @@ if (isset($_POST['submit_review']) && $user_logged_in) {
     }
 }
 
+// Check if property is already booked
+$property_booked = false;
+if ($property_id) {
+    $stmt = $conn->prepare("SELECT COUNT(*) as booking_count FROM bookings WHERE property_id = ? AND status = 'approved'");
+    $stmt->bind_param("i", $property_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $booking_count = $result->fetch_assoc()['booking_count'];
+    $property_booked = ($booking_count > 0);
+    $stmt->close();
+}
+
 // Handle booking submission
-if (isset($_POST['submit_booking']) && $user_logged_in) {
+if (isset($_POST['submit_booking']) && $user_logged_in && !$property_booked) {
     $start_date = $_POST['start_date'];
-    $is_monthly = isset($_POST['is_monthly']) ? 1 : 0;
     
-    // Calculate end date - if monthly, add 30 days to start date
-    if ($is_monthly) {
-        $end_date = date('Y-m-d', strtotime($start_date . ' + 30 days'));
-    } else {
-        $end_date = $_POST['end_date'];
-    }
+    // Always calculate end date as 30 days from start date (monthly rental only)
+    $end_date = date('Y-m-d', strtotime($start_date . ' + 30 days'));
     
     $rent_amount = $property['price'];
     
-    // CORRECTED bind_param parameters to match query
     $stmt = $conn->prepare("INSERT INTO bookings (property_id, user_id, check_in_date, check_out_date, price, status, created_at) 
                            VALUES (?, ?, ?, ?, ?, 'pending', NOW())");
     $stmt->bind_param("iissd", $property_id, $user_id, $start_date, $end_date, $rent_amount);
@@ -268,11 +266,11 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                     <h1 class="text-3xl font-bold mb-2 flex items-center justify-between">
                         <?php echo htmlspecialchars($property['title']); ?>
                         
-                        <!-- Like (Heart) Icon -->
+                        <!-- Corrected Heart Icon -->
                         <form method="post" class="inline">
-                            <input type="hidden" name="toggle_like" value="1">
-                            <button type="submit" class="text-3xl <?php echo $is_liked ? 'text-red-600' : 'text-gray-500'; ?>">
-                                <i class="fas<?php echo $is_liked ? 's' : 'r'; ?> fa-heart"></i>
+                            <input type="hidden" name="toggle_favorite" value="1">
+                            <button type="submit" class="text-3xl <?php echo $is_favorite ? 'text-red-600' : 'text-gray-500'; ?>">
+                                <i class="fa<?php echo $is_favorite ? 's' : 'r'; ?> fa-heart"></i>
                             </button>
                         </form>
                     </h1>
@@ -375,20 +373,29 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                 </div>
             </div>
                 
-            <!-- Right Side (Booking Panel) - MOVED OUTSIDE OF PROPERTY INFO -->
+            <!-- Right Side (Booking Panel) -->
             <div class="w-full lg:w-1/3 space-y-6">
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <form action="propertyDetails.php?id=<?php echo $property_id ?>" method="post">
-                        <button onclick="openBookingModal()" class="w-full bg-indigo-600 text-white py-3 rounded-lg mb-4 hover:bg-indigo-700" name="messagebtn">
+                        <button class="w-full bg-indigo-600 text-white py-3 rounded-lg mb-4 hover:bg-indigo-700" name="messagebtn">
                             <i class="far fa-envelope mr-2"></i>
                             <a href="message.php?receiver_id=<?php echo $property['user_id'] ?>">Message Owner</a>
                         </button>
                     </form>
-                    <button class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600" 
-                        id="bookNowBtn" onclick="openBookingModal()">
-                        <i class="fas fa-book mr-2"></i>
-                        Book Now
-                    </button>
+                    
+                    <!-- Changed to show "Booked" button when property is not available -->
+                    <?php if ($property_booked): ?>
+                        <button class="w-full bg-gray-500 text-white py-3 rounded-lg cursor-not-allowed" disabled>
+                            <i class="fas fa-ban mr-2"></i>
+                            Already Booked
+                        </button>
+                    <?php else: ?>
+                        <button class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600" 
+                            id="bookNowBtn" onclick="openBookingModal()">
+                            <i class="fas fa-book mr-2"></i>
+                            Book Now
+                        </button>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Property Agent Information -->
@@ -450,10 +457,10 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
         </div>
     </div>
 
-    <!-- Booking Modal -->
+    <!-- Booking Modal - Simplified to only use monthly booking -->
     <div id="bookingModal" class="modal-backdrop">
         <div class="modal-content">
-            <h2 class="text-2xl font-bold mb-4">Book Now</h2>
+            <h2 class="text-2xl font-bold mb-4">Book Now - Monthly Rental</h2>
             <form method="post" action="propertyDetails.php?id=<?php echo $property_id; ?>">
                 <!-- Start Date -->
                 <div class="mb-4">
@@ -470,27 +477,12 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
                     />
                 </div>
 
-                <!-- Monthly Option -->
-                <div class="mb-4">
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" id="is_monthly" name="is_monthly" class="rounded border-gray-300 text-indigo-600" 
-                               onchange="toggleEndDateField()">
-                        <span class="ml-2">Monthly Rental (30 days)</span>
-                    </label>
-                </div>
-
-                <!-- End Date -->
-                <div class="mb-4" id="end_date_container">
-                    <label for="end_date" class="block text-sm font-medium text-gray-700">
-                        Check-out Date
-                    </label>
-                    <input
-                        type="date"
-                        id="end_date"
-                        name="end_date"
-                        class="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                        required
-                    />
+                <!-- Display Monthly Rental Info -->
+                <div class="mb-4 bg-gray-100 p-3 rounded-lg">
+                    <div class="flex items-center text-gray-700">
+                        <i class="fas fa-calendar-alt mr-2 text-indigo-600"></i>
+                        <span>Monthly Rental (30 days)</span>
+                    </div>
                 </div>
                 
                 <!-- Rent Amount (Read-Only) -->
@@ -547,7 +539,7 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
         </div>
     </div>
     
-    <!-- CORRECTED: Full width footer -->
+    <!-- Footer -->
     <div class="w-full">
         <?php include './include/footer.php' ?>
     </div>
@@ -582,40 +574,6 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
             <?php endif; ?>
         }
         
-        // Calculate end date based on start date (for monthly rentals)
-        function calculateEndDate() {
-            const startDateInput = document.getElementById('start_date');
-            const endDateInput = document.getElementById('end_date');
-            const isMonthly = document.getElementById('is_monthly').checked;
-            
-            if (startDateInput.value && isMonthly) {
-                const startDate = new Date(startDateInput.value);
-                const endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 30);
-                
-                // Format date as YYYY-MM-DD
-                const year = endDate.getFullYear();
-                const month = String(endDate.getMonth() + 1).padStart(2, '0');
-                const day = String(endDate.getDate()).padStart(2, '0');
-                
-                endDateInput.value = `${year}-${month}-${day}`;
-            }
-        }
-        
-        // Toggle end date field visibility based on monthly checkbox
-        function toggleEndDateField() {
-            const isMonthly = document.getElementById('is_monthly').checked;
-            const endDateContainer = document.getElementById('end_date_container');
-            
-            if (isMonthly) {
-                endDateContainer.style.display = 'none';
-                calculateEndDate();
-            } else {
-                endDateContainer.style.display = 'block';
-                document.getElementById('end_date').value = '';
-            }
-        }
-        
         // Modal functions
         function openReviewModal() {
             document.getElementById('reviewModal').style.display = 'flex';
@@ -647,25 +605,14 @@ if (isset($_POST['submit_booking']) && $user_logged_in) {
         
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-            // Set min date for end date input based on start date
+            // Initialize date input with current date
             const startDateInput = document.getElementById('start_date');
-            const endDateInput = document.getElementById('end_date');
-            
-            startDateInput.addEventListener('change', function() {
-                endDateInput.min = this.value;
-                if (document.getElementById('is_monthly').checked) {
-                    calculateEndDate();
-                }
-            });
-            
-            // Initialize date inputs with current date
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
             
             startDateInput.value = `${year}-${month}-${day}`;
-            endDateInput.min = startDateInput.value;
         });
     </script>
 </body>

@@ -33,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         $update_stmt = $conn->prepare($update_query);
         $update_stmt->bind_param("si", $new_hashed_password, $user_id);
         $update_stmt->execute();
-        $update_stmt->close();
 
         $password_change_message = "Password updated successfully!";
     } else {
@@ -48,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
-    $stmt->close();
 
     // Destroy session and redirect
     session_destroy();
